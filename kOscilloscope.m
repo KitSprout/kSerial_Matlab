@@ -34,7 +34,7 @@ methods
         switch nargin
             case 0
                 fig = figure('Position', [100, 200, 1200, 460], 'color', 'w');
-            	tiledlayout(fig, 1, 1);
+                tiledlayout(fig, 1, 1);
                 ax = nexttile;
             case 1
                 ax = varargin{1};

@@ -363,7 +363,7 @@ methods
 
                 % update packet data lenght to packetInfo
                 packetCount = size(packetInfo, 2);
-              	packetInfo(6, :) = 0;
+                packetInfo(6, :) = 0;
                 for i = 1 : packetCount
                     packetInfo(6, i) = packetInfo(1, i) / s.typeSize(packetInfo(2, i));
                 end
@@ -590,7 +590,7 @@ methods
         name = varargin{1};
         filename = strcat(name, tag);
         fprintf(filename);
-      	fprintf('  SAVE... ');
+        fprintf('  SAVE... ');
 
         ks = s.ks;
         save(filename, 'ks');
