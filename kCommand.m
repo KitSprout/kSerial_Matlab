@@ -16,13 +16,13 @@ classdef kCommand < handle
 properties (SetAccess = private)
     s;
 
-    KSCMD_R0_DEVICE_CHECK            = 0xD0;
+    KSCMD_R0_DEVICE_ID               = 0xD0;
+    KSCMD_R0_DEVICE_BAUDRATE         = 0xD1;
+    KSCMD_R0_DEVICE_RATE             = 0xD2;
+    KSCMD_R0_DEVICE_MDOE             = 0xD3;
+    KSCMD_R0_DEVICE_GET              = 0xE3;
 	KSCMD_R2_TWI_SCAN_DEVICE         = 0xA1;
     KSCMD_R2_TWI_SCAN_REGISTER       = 0xA2;
-    KSCMD_R3_DK_MODE                 = 0xAD;
-    KSCMD_R3_DK_CONTINUOUS_READ      = 0xCC;
-    KSCMD_R3_DK_STEP_MOTOR           = 0xEE;
-    KSCMD_R3_DK_STEP_MOTOR_THRESHOLD = 0xEA;
 end
 
 methods
@@ -40,21 +40,64 @@ methods
         kcmd.s.delay(second);
     end
 
-    % id = kcmd.getid()
-    function varargout = getid( kcmd )
-        ri = kcmd.s.packetSendRecv([kcmd.KSCMD_R0_DEVICE_CHECK, 0x00], 'R0');
+    % id = kcmd.check_device()
+    function varargout = check_device( kcmd )
+        ri = kcmd.s.packetSendRecv([kcmd.KSCMD_R0_DEVICE_ID, 0x00], 'R0');
         id = dec2hex(ri(4)*256+ ri(3));
         varargout = { id };
     end
 
-    % id = kcmd.set_mode(mode)
-    function set_mode( kcmd, mode )
-        kcmd.s.packetSendRecv([kcmd.KSCMD_R3_DK_MODE, mode], 'R3');
+    % info = kcmd.get_info(cmd)
+    function varargout = get_info( kcmd, cmd )
+        [~, rd] = kcmd.s.packetSendRecv([kcmd.KSCMD_R0_DEVICE_GET, cmd], 'R0');
+        varargout = { typecast(uint8(rd), 'int32') };
     end
 
-    % id = kcmd.set_continuous_read()
-    function set_continuous_read( kcmd )
-        kcmd.s.packetSendRecv([kcmd.KSCMD_R3_DK_CONTINUOUS_READ, 0x00], 'R3');
+    % id = kcmd.get_id()
+    function varargout = get_id( kcmd )
+        varargout = { dec2hex(kcmd.get_info(kcmd.KSCMD_R0_DEVICE_ID)) };
+    end
+
+    % baudrate = kcmd.get_baudrate()
+    function varargout = get_baudrate( kcmd )
+        varargout = { kcmd.get_info(kcmd.KSCMD_R0_DEVICE_BAUDRATE) };
+    end
+
+    % rate = kcmd.get_rate()
+    function varargout = get_rate( kcmd )
+        varargout = { kcmd.get_info(kcmd.KSCMD_R0_DEVICE_RATE) };
+    end
+
+    % mode = kcmd.get_mode()
+    function varargout = get_mode( kcmd )
+        varargout = { kcmd.get_info(kcmd.KSCMD_R0_DEVICE_MDOE) };
+    end
+
+    % kcmd.set_baudrate(baudrate)
+    function set_baudrate( kcmd, baudrate )
+        baudrate = typecast(int32(baudrate), 'uint8');
+        kcmd.s.packetSendRecv([kcmd.KSCMD_R0_DEVICE_BAUDRATE, 4], baudrate, 'R0');
+    end
+
+    % kcmd.set_rate(rate)
+    function set_rate( kcmd, rate )
+        rate = typecast(int32(rate), 'uint8');
+        kcmd.s.packetSendRecv([kcmd.KSCMD_R0_DEVICE_RATE, 4], rate, 'R0');
+    end
+
+    % kcmd.set_mode(mode)
+    function set_mode( kcmd, mode )
+        kcmd.s.packetSendRecv([kcmd.KSCMD_R0_DEVICE_MDOE, mode], 'R0');
+    end
+
+    % kcmd.set_normal_mode()
+    function set_normal_mode( kcmd )
+        kcmd.set_mode(0);
+    end
+
+    % kcmd.set_kserial_mode()
+    function set_kserial_mode( kcmd )
+        kcmd.set_mode(1);
     end
 
     % [rd, cnt] = kcmd.read(address, register, lenght)
@@ -109,7 +152,7 @@ methods
     function varargout = scanregister( kcmd, address, varargin )
         [ri, rd] = kcmd.s.packetSendRecv([kcmd.KSCMD_R2_TWI_SCAN_REGISTER, address*2], 0, 'R2');
 
-        if (nargin == 2)
+        if (nargin == 3)
             if strcmp('printon', varargin{end})
                 fprintf('\n');
                 fprintf(' >> i2c device register (address %02X)\n\n', address);
